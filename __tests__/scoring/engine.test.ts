@@ -22,10 +22,43 @@ vi.mock("@/lib/scoring/checks/bundleDetection", () => ({
   runBundleDetectionCheck: vi.fn(),
 }));
 
+vi.mock("@/lib/scoring/checks/tokenAge", () => ({
+  runTokenAgeCheck: vi.fn(),
+}));
+
+vi.mock("@/lib/scoring/checks/liquidityDepth", () => ({
+  runLiquidityDepthCheck: vi.fn(),
+}));
+
 import { analyzeToken } from "@/lib/scoring/engine";
 import { runBundleDetectionCheck } from "@/lib/scoring/checks/bundleDetection";
 import { runHoneypotCheck } from "@/lib/scoring/checks/honeypot";
+import { runLiquidityDepthCheck } from "@/lib/scoring/checks/liquidityDepth";
+import { runTokenAgeCheck } from "@/lib/scoring/checks/tokenAge";
 import { getTokenHolders, getTokenInfo } from "@/lib/solana/token";
+
+const mockNewChecksPass = () => {
+  vi.mocked(runTokenAgeCheck).mockReturnValue({
+    id: "tokenAge",
+    name: "Token age & survival",
+    passed: true,
+    severity: "INFO",
+    score: 0,
+    maxScore: 10,
+    details: "OK",
+    dataSource: "DexScreener",
+  });
+  vi.mocked(runLiquidityDepthCheck).mockReturnValue({
+    id: "liquidityDepth",
+    name: "Liquidity depth",
+    passed: true,
+    severity: "INFO",
+    score: 0,
+    maxScore: 10,
+    details: "OK",
+    dataSource: "DexScreener",
+  });
+};
 
 describe("Scoring Engine", () => {
   it("returns max score 45 when mint authority is not revoked", async () => {
@@ -70,6 +103,7 @@ describe("Scoring Engine", () => {
       details: "OK",
       dataSource: "Helius",
     });
+    mockNewChecksPass();
 
     const result = await analyzeToken("mint");
     expect(result.score.total).toBe(45);
@@ -117,11 +151,12 @@ describe("Scoring Engine", () => {
       details: "OK",
       dataSource: "Helius",
     });
+    mockNewChecksPass();
 
     const result = await analyzeToken("mint");
     const concentration = result.score.breakdown.find((entry) => entry.id === "holderConcentration");
     expect(concentration?.score).toBe(20);
-    expect(result.score.total).toBe(75);
+    expect(result.score.total).toBe(79);
   });
 
   it("handles upstream quote failure without crashing", async () => {
@@ -149,12 +184,15 @@ describe("Scoring Engine", () => {
     vi.mocked(runHoneypotCheck).mockResolvedValue({
       id: "honeypotSimulation",
       name: "Honeypot simulation",
-      passed: false,
-      severity: "HIGH",
-      score: 20,
+      passed: true,
+      severity: "INFO",
+      score: 10,
       maxScore: 20,
-      details: "Jupiter failure",
+      details: "Quote unavailable, marked unknown",
       dataSource: "Jupiter",
+      metadata: {
+        state: "UNKNOWN",
+      },
     });
     vi.mocked(runBundleDetectionCheck).mockResolvedValue({
       id: "bundleDetection",
@@ -166,9 +204,10 @@ describe("Scoring Engine", () => {
       details: "OK",
       dataSource: "Helius",
     });
+    mockNewChecksPass();
 
     const result = await analyzeToken("mint");
-    expect(result.score.total).toBe(75);
-    expect(result.score.summary).toContain("Honeypot simulation");
+    expect(result.score.total).toBe(88);
+    expect(result.score.summary).not.toContain("Honeypot simulation");
   });
 });

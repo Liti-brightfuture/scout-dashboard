@@ -6,8 +6,11 @@ import { runBundleDetectionCheck } from "@/lib/scoring/checks/bundleDetection";
 import { runFreezeAuthorityCheck } from "@/lib/scoring/checks/freezeAuthority";
 import { runHolderConcentrationCheck } from "@/lib/scoring/checks/holderConcentration";
 import { runHoneypotCheck } from "@/lib/scoring/checks/honeypot";
+import { runLiquidityDepthCheck } from "@/lib/scoring/checks/liquidityDepth";
 import { runLiquidityLockCheck } from "@/lib/scoring/checks/liquidityLock";
 import { runMintAuthorityCheck } from "@/lib/scoring/checks/mintAuthority";
+import { runTokenAgeCheck } from "@/lib/scoring/checks/tokenAge";
+import { AUTHORITY_CAP_RAW, NORMALIZATION_BASE, NORMALIZATION_DENOMINATOR } from "@/lib/scoring/weights";
 import { getTokenHolders, getTokenInfo } from "@/lib/solana/token";
 import { riskFromScore, timestampBucket } from "@/lib/utils";
 import type { CheckResult, ScoreResult, TokenAnalysis } from "@/types/token";
@@ -45,7 +48,7 @@ export async function analyzeToken(tokenAddress: string): Promise<TokenAnalysis>
 
   const [honeypotCheck, bundleCheck] = await Promise.all([
     runHoneypotCheck(token),
-    runBundleDetectionCheck(tokenAddress),
+    runBundleDetectionCheck(token),
   ]);
 
   const checks: CheckResult[] = [
@@ -55,6 +58,8 @@ export async function analyzeToken(tokenAddress: string): Promise<TokenAnalysis>
     honeypotCheck,
     runLiquidityLockCheck(token),
     bundleCheck,
+    runTokenAgeCheck(token),
+    runLiquidityDepthCheck(token),
   ];
 
   const penalties = checks.reduce((sum, check) => sum + check.score, 0);
@@ -62,8 +67,9 @@ export async function analyzeToken(tokenAddress: string): Promise<TokenAnalysis>
     (check) =>
       (check.id === "mintAuthority" || check.id === "freezeAuthority") && !check.passed,
   );
-  const rawScore = Math.max(0, 100 - penalties);
-  const total = hasAuthorityFailure ? Math.min(rawScore, 45) : rawScore;
+  const rawScore = Math.max(0, NORMALIZATION_BASE - penalties);
+  const cappedScore = hasAuthorityFailure ? Math.min(rawScore, AUTHORITY_CAP_RAW) : rawScore;
+  const total = Math.round(cappedScore / NORMALIZATION_DENOMINATOR);
 
   const score: ScoreResult = {
     total,

@@ -14,9 +14,25 @@
 
 **Current behavior**: The bundle detector scans the token's early transaction neighborhood and flags suspicious shared fee-payer or same-slot acquisition patterns.
 
-**Critical limitation**: This is heuristic, not deterministic. Jito bundles are not directly identifiable from generic transaction history alone.
+**Critical limitation**: This is heuristic, not deterministic. Jito bundles are not directly identifiable from generic transaction history alone. When `pairCreatedAt` is unavailable (e.g., token not yet paired on DexScreener), bundle detection returns UNKNOWN with a conservative 2-point penalty rather than failing hard.
 
 **Production-scale path**: Integrate Jito-specific data or a paid indexing partner, then validate the heuristic against labeled rug-pull samples.
+
+### Token Age & Survival (Check #7)
+
+**Current behavior**: Scout uses pair creation time from DexScreener to flag new tokens as higher risk. Tokens under 24 hours receive the full 10-point penalty; tokens 1–7 days old receive 7 points; tokens 7–30 days or lacking $50K+ liquidity receive 4 points. Tokens missing a `pairCreatedAt` value are marked UNKNOWN with a 2-point conservative penalty.
+
+**Critical limitation**: `pairCreatedAt` reflects when the liquidity pair was created on DexScreener, not when the contract was deployed. A token may have existed for weeks before pairing, making it appear newer than it is. Relaunched or migrated tokens may reset this clock entirely.
+
+**Production-scale path**: Cross-reference on-chain program deployment timestamps via Solana's `getAccountInfo` genesis slot and reconcile with pair creation date.
+
+### Liquidity Depth (Check #8)
+
+**Current behavior**: Scout scores absolute liquidity depth from DexScreener as a graduated signal. Tokens above $500K pass; $100K–$500K takes a 3-point penalty; $20K–$100K takes 6 points; below $20K takes the full 10-point penalty. Tokens with null liquidity receive an UNKNOWN penalty of 2 points.
+
+**Critical limitation**: DexScreener liquidity figures reflect a single pool snapshot and may lag real-time conditions. A token can appear liquid and drain within the same cache TTL window (currently 30 seconds). Only the best-ranked pair is evaluated, so aggregate liquidity across all pools is not captured.
+
+**Production-scale path**: Aggregate liquidity across all pools for the token mint, not just the best-ranked DexScreener pair, and add a time-series liquidity depth trend check.
 
 ### Liquidity Lock (Check #5)
 
