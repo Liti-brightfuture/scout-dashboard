@@ -88,3 +88,27 @@ Polling while the user is present is honest, cheap, and easy to reason about. Re
 ## Manual test tokens
 
 Record the real tokens you analyze during manual QA here before publishing the project publicly.
+
+## Manual Test Results — April 2026
+
+### Token 1: GENZ (`6EGYXQAVXkaQJurhhq1M5MJzjXpguhEG6CN35sA3qJg`)
+- Score: 83/100 — WARNING
+- Age: <24h, Liquidity: ~$105K
+- Flags: Token age (sub-24h), Liquidity depth (sub-$500K)
+- Observation: Honeypot check PASS after fix on lite-api.jup.ag
+- Bundle detection: UNKNOWN — no transactions found within the first 30 minutes post-pool-creation
+
+### Token 2: LOL (`34q2KmCvapecJgR6ZrtbCTrzZVtkt3a5mHEA3TuEsWYb`)
+- Score: 88/100 — SAFE
+- Age: 21 days, Liquidity: ~$365K
+- Flags: Token age (sub-30 days), Liquidity depth (sub-$500K)
+- Observation: Score correctly reflects the token's risk profile
+
+### Token 3: BONK (`DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263`)
+- Score: 92/100 — SAFE
+- Age: 699 days, Liquidity: ~$325K on the tested pool
+- Flags: Liquidity depth FLAG — known limitation
+- Observation: BONK has a $528M market cap but liquidity is distributed across
+  dozens of pools. Scout analyzes a single pool, not an aggregate.
+  This is a real documented limitation — not a code bug.
+  Production path: cross-pool liquidity aggregation required.
