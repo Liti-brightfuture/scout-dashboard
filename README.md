@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Scout - Solana Token Intelligence
 
-## Getting Started
+> Real-time on-chain analysis. Scores Solana tokens from 0-100 using six automated checks to surface rug-pull patterns before you buy.
 
-First, run the development server:
+Scout is a recruiter-grade Web3 portfolio project built as a serious MVP rather than a tutorial clone. It combines Solana mint analysis, holder concentration heuristics, live price and liquidity data, wallet relationship graphs, and wallet-linked alerts in one Next.js application.
+
+## What makes this different
+
+Most token scanners stop at basic holder percentages. Scout explains why those numbers matter, layers the signals into an interpretable score, and makes the tradeoffs visible when heuristics are involved.
+
+The wallet relationship graph is the standout module: it traces early wallet interactions around a token so recruiter reviewers can see both UI depth and practical Solana data modeling.
+
+## Stack
+
+- Next.js 16 App Router with strict TypeScript
+- Tailwind CSS v4 and CSS custom properties
+- Zustand for client state
+- Recharts for price and holder visuals
+- react-force-graph-2d for wallet graph exploration
+- Solana Wallet Adapter + `@solana/web3.js`
+- Helius RPC and Enhanced API
+- Jupiter Price and Quote API
+- DexScreener and DexPaprika
+- Neon Postgres and Upstash Redis
+- Vitest + React Testing Library
+
+## Features
+
+- Wallet connect with Phantom and Solflare
+- Token lookup and portfolio risk badges
+- Token analyzer with:
+  - score breakdown
+  - mint/freeze authority checks
+  - holder concentration analysis
+  - honeypot sell simulation
+  - liquidity lock heuristic
+  - bundle detection heuristic
+- Wallet graph view with cluster highlighting
+- Wallet-linked alerts with polling-based evaluation
+
+## Internal API
+
+- `GET /api/token/[address]`
+- `GET /api/wallet/[address]`
+- `GET /api/graph/[tokenAddress]`
+- `GET /api/alerts?wallet={address}`
+- `POST /api/alerts`
+- `PATCH /api/alerts`
+
+## Environment
+
+Copy `.env.example` to `.env.local` and provide:
+
+- `HELIUS_API_KEY`
+- `JUPITER_API_KEY`
+- `NEON_DATABASE_URL`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+
+All third-party API calls that require secrets run server-side only.
+
+## Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tests
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run test
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Known limitations
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Scout intentionally prefers honest heuristics over fake certainty. See [PRODUCTION_NOTES.md](./PRODUCTION_NOTES.md) for the current limits around bundle detection, liquidity lock coverage, holder snapshots, and free-tier rate constraints.
