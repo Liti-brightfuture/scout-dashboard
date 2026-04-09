@@ -2,6 +2,8 @@
 
 > Real-time on-chain analysis. Scores Solana tokens from 0-100 using six automated checks to surface rug-pull patterns before you buy.
 
+![Scout Demo](docs/assets/demo.gif)
+
 Scout is a recruiter-grade Web3 portfolio project built as a serious MVP rather than a tutorial clone. It combines Solana mint analysis, holder concentration heuristics, live price and liquidity data, wallet relationship graphs, and wallet-linked alerts in one Next.js application.
 
 ## What makes this different
