@@ -4,9 +4,11 @@ import { timestampBucket } from "@/lib/utils";
 import type { PriceCandle } from "@/types/token";
 
 const TTL_SECONDS = 60;
+const CANDLE_COUNT = 24;
+const HOUR_MS = 60 * 60 * 1000;
 
 interface DexPaprikaCandle {
-  timeOpen?: string;
+  time_open?: string;
   open?: number;
   high?: number;
   low?: number;
@@ -27,12 +29,13 @@ export async function getDexPaprikaCandles(poolAddress: string): Promise<PriceCa
     return cached;
   }
 
+  const start = new Date(Date.now() - CANDLE_COUNT * HOUR_MS).toISOString();
   const data = await fetchJson<DexPaprikaCandle[]>(
-    `https://api.dexpaprika.com/networks/solana/pools/${poolAddress}/ohlcv/hour?limit=24`,
+    `https://api.dexpaprika.com/networks/solana/pools/${poolAddress}/ohlcv?start=${start}&interval=1h&limit=${CANDLE_COUNT}`,
   );
 
   const candles = data.map((entry) => ({
-    timestamp: entry.timeOpen ? new Date(entry.timeOpen).getTime() : Date.now(),
+    timestamp: entry.time_open ? new Date(entry.time_open).getTime() : Date.now(),
     open: entry.open ?? 0,
     high: entry.high ?? 0,
     low: entry.low ?? 0,
